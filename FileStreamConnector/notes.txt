@@ -1,0 +1,39 @@
+#To create single node Kafka Broker
+1. The docker compose will bring up 1 zookeeper, 1 kafka broker and 1 Kafka connect.
+2. Zookeeper server is listening on port 2181 for Kafka brokers running inside container's network
+    i)Kafka broker connect to zookeeper via port 2181
+    ii)Host client / our laptop connect to Zookeeper via 22181
+3. Kafka Connect is setup with :
+    i)bootstrap server  = Kafka broker 
+    ii)filestream-source plugin
+    iii)will need to deploy connector via REST api
+4. Start servers : docker-compose up -d
+5. To test if Zookeeper and kafka broker is up use 
+    i)tnc localhost -p 22181
+    ii)tnc localhost -p 9092 or 
+    iii)docker-compose ps
+6. Now we can go into Kafka broker container's terminal
+   i) docker exec -it broker bash
+   ii) To know Kafka scripts available, we need to goto the root and get into 'bin' folder :
+      a) cd /
+      b) cd bin 
+      c) ls 
+      d) we can see the available scripts for Kafka with file name like 'kafka%' 
+    iii) To exit from the bash : exit
+7.Deploy connector in Kafka Connect
+    i)To test REST api is up: Invoke-WebRequest -URI http://localhost:8083/connectors/
+    ii)Deploy filestream-source connector : 
+        $params = '
+        {"name" : "file-source",
+         "config" : {
+         "connector.class" : "FileStreamSource",
+         "tasks.max" : "1",
+         "file" : "test.txt",
+         "topic": "file-source",
+         "name" : "file-source"
+         }}'
+        Invoke-RestMethod -Uri "http://localhost:8083/connectors" -Method Post -Body $params -ContentType "application/json"
+    iii)create a new text file at home directory : for i in {1..3}; do echo "log line $i"; done > test.txt
+    iv)To verify topic created = 'file-source' 
+    v)bash into container : docker exec -it connect bash
+    vi)View topics : kafka-topics --list --bootstrap-server broker:29092
